@@ -1,0 +1,10 @@
+Server listening on port 3002
+ToDoItem Controller: Connected to MQTT broker: 192.168.10.174
+Asset Task Controller: Connected to MQTT broker: 192.168.10.124
+Asset Controller: Connected to MQTT broker: 192.168.10.124
+Meter Controller: Connected to MQTT broker: 192.168.10.124
+Meter Controller: Connected to MQTT broker: 192.168.10.174
+Cleaning up resources...
+Disconnected MQTT client
+Cleaning up resources...
+Disconnected MQTT client
