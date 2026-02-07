@@ -3,39 +3,35 @@ import { open, Database } from "sqlite";
 import path from "path";
 
 let db: Database<sqlite3.Database, sqlite3.Statement> | null = null;
+let initPromise: Promise<Database<sqlite3.Database, sqlite3.Statement>> | null = null;
 
 // Initialize database connection
 async function initDb() {
   if (db) return db;
-  
-  db = await open({
-    filename: path.join(__dirname, "app.db"),
-    driver: sqlite3.Database
-  });
-  
-  // Enable foreign keys and WAL mode
-  await db.exec("PRAGMA foreign_keys = ON");
-  await db.exec("PRAGMA journal_mode = WAL");
-  
-  return db;
+
+  if (!initPromise) {
+    initPromise = (async () => {
+      const database = await open({
+        filename: path.join(__dirname, "app.db"),
+        driver: sqlite3.Database
+      });
+
+      // Enable foreign keys and WAL mode
+      await database.exec("PRAGMA foreign_keys = ON");
+      //await database.exec("PRAGMA journal_mode = WAL");
+
+      db = database;
+      return database;
+    })().catch((error) => {
+      initPromise = null;
+      throw error;
+    });
+  }
+
+  return initPromise;
 }
 
 class DbWrapper {
-  async beginTransaction(): Promise<void> {
-    const database = await initDb();
-    await database.exec("BEGIN TRANSACTION");
-  }
-
-  async commit(): Promise<void> {
-    const database = await initDb();
-    await database.exec("COMMIT");
-  }
-
-  async rollback(): Promise<void> {
-    const database = await initDb();
-    await database.exec("ROLLBACK");
-  }
-
   async query(sql: string, params?: any[]): Promise<any> {
     try {
       const database = await initDb();

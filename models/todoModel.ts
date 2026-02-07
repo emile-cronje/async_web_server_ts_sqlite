@@ -61,47 +61,22 @@ export class ToDoModel {
     }
 
     async UpdateTodo(id: number, todoItem: any): Promise<Todo | null> {
-        try {
-            await pool.beginTransaction();
-            
-            // Read current version
-            const versionResult = await pool.query(
-                "SELECT version FROM todo_item WHERE id = ?",
-                [id]
-            );
-            
-            if (!versionResult.rows || versionResult.rows.length === 0) {
-                await pool.rollback();
-                return null;
-            }
-            
-            const currentVersion = versionResult.rows[0].version;
-            const newVersion = currentVersion + 1;
-            
-            // Update record without RETURNING
-            await pool.query(
-                "UPDATE todo_item SET name = ?, description = ?, is_complete = ?, message_id = ?, version = ? WHERE id = ?",
-                [todoItem['name'], todoItem['description'], todoItem['isComplete'], todoItem['messageId'], newVersion, id]
-            );
-            
-            // Select the updated record
-            const selectResult = await pool.query(
-                "SELECT * FROM todo_item WHERE id = ?",
-                [id]
-            );
-            
-            await pool.commit();
-            
-            let updatedTodoItem: any = null;
-            
-            if (selectResult.rows != null && selectResult.rows.length > 0)
-                updatedTodoItem = TodoMapper.map(selectResult.rows[0]);
-            
-            return updatedTodoItem;
-        } catch (error) {
-            await pool.rollback();
-            throw error;
-        }
+        await pool.query(
+            "UPDATE todo_item SET name = ?, description = ?, is_complete = ?, message_id = ? WHERE id = ?",
+            [todoItem['name'], todoItem['description'], todoItem['isComplete'], todoItem['messageId'], id]
+        );
+
+        const selectResult = await pool.query(
+            "SELECT * FROM todo_item WHERE id = ?",
+            [id]
+        );
+
+        let updatedTodoItem: any = null;
+
+        if (selectResult.rows != null && selectResult.rows.length > 0)
+            updatedTodoItem = TodoMapper.map(selectResult.rows[0]);
+
+        return updatedTodoItem;
     }
 
     async GetTodoItemsCount(): Promise<any> {

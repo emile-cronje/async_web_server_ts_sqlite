@@ -44,30 +44,12 @@ class MeterReadingModel {
         return newMeterReading;
     }
     async UpdateMeterReading(id, meterReading) {
-        try {
-            await dbConfig_1.default.beginTransaction();
-            // Read current version
-            const versionResult = await dbConfig_1.default.query("SELECT version FROM meter_reading WHERE id = ?", [id]);
-            if (!versionResult.rows || versionResult.rows.length === 0) {
-                await dbConfig_1.default.rollback();
-                return null;
-            }
-            const currentVersion = versionResult.rows[0].version;
-            const newVersion = currentVersion + 1;
-            // Update record without RETURNING
-            await dbConfig_1.default.query("UPDATE meter_reading SET reading = ?, reading_on = ?, message_id = ?, version = ? WHERE id = ?", [meterReading['reading'], meterReading['readingOn'], meterReading['messageId'], newVersion, id]);
-            // Select the updated record
-            const selectResult = await dbConfig_1.default.query("SELECT * FROM meter_reading WHERE id = ?", [id]);
-            await dbConfig_1.default.commit();
-            let updatedMeterReading = null;
-            if (selectResult.rows != null && selectResult.rows.length > 0)
-                updatedMeterReading = MeterReadingMapper.map(selectResult.rows[0]);
-            return updatedMeterReading;
-        }
-        catch (error) {
-            await dbConfig_1.default.rollback();
-            throw error;
-        }
+        await dbConfig_1.default.query("UPDATE meter_reading SET reading = ?, reading_on = ?, message_id = ? WHERE id = ?", [meterReading['reading'], meterReading['readingOn'], meterReading['messageId'], id]);
+        const selectResult = await dbConfig_1.default.query("SELECT * FROM meter_reading WHERE id = ?", [id]);
+        let updatedMeterReading = null;
+        if (selectResult.rows != null && selectResult.rows.length > 0)
+            updatedMeterReading = MeterReadingMapper.map(selectResult.rows[0]);
+        return updatedMeterReading;
     }
     async GetMeterReadingsCount() {
         const result = await dbConfig_1.default.query("SELECT COUNT(id) as count FROM meter_reading");
@@ -86,6 +68,9 @@ class MeterReadingModel {
         return await dbConfig_1.default.query('SELECT * FROM meter_reading WHERE meter_id = ?', [meterId]);
     }
     ;
+    async DeleteMeterReadingsForMeter(meterId) {
+        return await dbConfig_1.default.query("DELETE FROM meter_reading WHERE meter_id = ?", [meterId]);
+    }
 }
 exports.MeterReadingModel = MeterReadingModel;
 //# sourceMappingURL=meterReadingModel.js.map

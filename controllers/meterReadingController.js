@@ -65,12 +65,6 @@ class MeterReadingController {
         let mqttSessionId = req.body.mqttSessionId;
         try {
             const id = parseInt(req.params.id);
-            // Check if the meter reading exists before attempting to update
-            const existingMeterReading = await this.meterReadingModel.GetMeterReadingById(id);
-            if (!existingMeterReading) {
-                return res.status(404).json({ message: "Meter Reading not found" });
-            }
-            // Meter reading exists, proceed with update
             const updatedMeterReading = await this.meterReadingModel.UpdateMeterReading(id, meterReadingData);
             if (updatedMeterReading == null) {
                 return res.status(404).json({ message: "Meter Reading not found" });
@@ -142,13 +136,10 @@ class MeterReadingController {
     async DeleteMeterReadingsForMeter(meterId, req, res) {
         try {
             let queryResult = await this.meterReadingModel.GetMeterReadingIdsForMeter(meterId);
-            const meterReadingIds = Array.from(queryResult.rows);
-            for (const row of meterReadingIds) {
-                let readingId = row.id;
-                const savedMeterReading = await this.meterReadingModel.GetMeterReadingById(readingId);
-                if (savedMeterReading == null)
-                    continue;
-                await this.meterReadingModel.DeleteMeterReading(readingId);
+            await this.meterReadingModel.DeleteMeterReadingsForMeter(meterId);
+            const savedMeterReadings = Array.from(queryResult.rows);
+            for (const savedMeterReading of savedMeterReadings) {
+                const readingId = savedMeterReading.id;
                 const meterReadingData = {
                     messageId: req.body.messageId,
                     clientId: savedMeterReading.clientId,
@@ -180,7 +171,7 @@ class MeterReadingController {
     }
 }
 const meterReadingController = new MeterReadingController();
-meterReadingController.Initialise("192.168.10.174");
+meterReadingController.Initialise("192.168.10.135");
 const GetMeterReadingById = (req, res) => meterReadingController.GetMeterReadingById(req, res);
 exports.GetMeterReadingById = GetMeterReadingById;
 const CreateMeterReading = (req, res) => meterReadingController.CreateMeterReading(req, res);

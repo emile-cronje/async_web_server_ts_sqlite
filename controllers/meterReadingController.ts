@@ -73,15 +73,6 @@ class MeterReadingController {
 
         try {
             const id = parseInt(req.params.id);
-            
-            // Check if the meter reading exists before attempting to update
-            const existingMeterReading = await this.meterReadingModel.GetMeterReadingById(id);
-            
-            if (!existingMeterReading) {
-                return res.status(404).json({ message: "Meter Reading not found" });
-            }
-            
-            // Meter reading exists, proceed with update
             const updatedMeterReading = await this.meterReadingModel.UpdateMeterReading(id, meterReadingData);
 
             if (updatedMeterReading == null) {
@@ -160,17 +151,12 @@ class MeterReadingController {
     public async DeleteMeterReadingsForMeter(meterId: number, req: Request, res: Response): Promise<any> {
         try {
             let queryResult = await this.meterReadingModel.GetMeterReadingIdsForMeter(meterId);
+            await this.meterReadingModel.DeleteMeterReadingsForMeter(meterId);
 
-            const meterReadingIds = Array.from(queryResult.rows);
+            const savedMeterReadings = Array.from(queryResult.rows) as MeterReading[];
 
-            for (const row of meterReadingIds) {
-                let readingId = (row as any).id
-                const savedMeterReading = await this.meterReadingModel.GetMeterReadingById(readingId);
-
-                if (savedMeterReading == null)
-                    continue;
-
-                await this.meterReadingModel.DeleteMeterReading(readingId);
+            for (const savedMeterReading of savedMeterReadings) {
+                const readingId = savedMeterReading.id;
 
                 const meterReadingData = {
                     messageId: req.body.messageId,
@@ -207,7 +193,7 @@ class MeterReadingController {
 }
 
 const meterReadingController = new MeterReadingController();
-meterReadingController.Initialise("192.168.10.174");
+meterReadingController.Initialise("192.168.10.135");
 
 export const GetMeterReadingById = (req: Request, res: Response) => meterReadingController.GetMeterReadingById(req, res);
 export const CreateMeterReading = (req: Request, res: Response) => meterReadingController.CreateMeterReading(req, res);

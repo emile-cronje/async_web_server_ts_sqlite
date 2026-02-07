@@ -63,47 +63,22 @@ export class MeterReadingModel {
     }
 
     async UpdateMeterReading(id: number, meterReading: any): Promise<MeterReading | null> {
-        try {
-            await pool.beginTransaction();
-            
-            // Read current version
-            const versionResult = await pool.query(
-                "SELECT version FROM meter_reading WHERE id = ?",
-                [id]
-            );
-            
-            if (!versionResult.rows || versionResult.rows.length === 0) {
-                await pool.rollback();
-                return null;
-            }
-            
-            const currentVersion = versionResult.rows[0].version;
-            const newVersion = currentVersion + 1;
-            
-            // Update record without RETURNING
-            await pool.query(
-                "UPDATE meter_reading SET reading = ?, reading_on = ?, message_id = ?, version = ? WHERE id = ?",
-                [meterReading['reading'], meterReading['readingOn'], meterReading['messageId'], newVersion, id]
-            );
-            
-            // Select the updated record
-            const selectResult = await pool.query(
-                "SELECT * FROM meter_reading WHERE id = ?",
-                [id]
-            );
-            
-            await pool.commit();
-            
-            let updatedMeterReading: any = null;
-            
-            if (selectResult.rows != null && selectResult.rows.length > 0)
-                updatedMeterReading = MeterReadingMapper.map(selectResult.rows[0]);
-            
-            return updatedMeterReading;
-        } catch (error) {
-            await pool.rollback();
-            throw error;
-        }
+        await pool.query(
+            "UPDATE meter_reading SET reading = ?, reading_on = ?, message_id = ? WHERE id = ?",
+            [meterReading['reading'], meterReading['readingOn'], meterReading['messageId'], id]
+        );
+
+        const selectResult = await pool.query(
+            "SELECT * FROM meter_reading WHERE id = ?",
+            [id]
+        );
+
+        let updatedMeterReading: any = null;
+
+        if (selectResult.rows != null && selectResult.rows.length > 0)
+            updatedMeterReading = MeterReadingMapper.map(selectResult.rows[0]);
+
+        return updatedMeterReading;
     }
 
     async GetMeterReadingsCount(): Promise<any> {
@@ -125,4 +100,8 @@ export class MeterReadingModel {
     async GetMeterReadingIdsForMeter(meterId: number): Promise<any> {
         return await pool.query('SELECT * FROM meter_reading WHERE meter_id = ?', [meterId]);
     };
+
+    async DeleteMeterReadingsForMeter(meterId: number): Promise<any> {
+        return await pool.query("DELETE FROM meter_reading WHERE meter_id = ?", [meterId]);
+    }
 }

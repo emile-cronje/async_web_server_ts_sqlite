@@ -30,6 +30,7 @@ export class AssetTaskModel {
             "CREATE TABLE IF NOT EXISTS asset_task(id INTEGER PRIMARY KEY AUTOINCREMENT, asset_id INTEGER NOT NULL, version INTEGER NOT NULL, client_id INTEGER NOT NULL, message_id TEXT, code TEXT NOT NULL UNIQUE, description TEXT NOT NULL, is_rfs BOOLEAN NOT NULL)");
 
         await pool.query("CREATE UNIQUE INDEX IF NOT EXISTS index_asset_task_id_client_id ON asset_task(id, client_id)");
+        await pool.query("CREATE INDEX IF NOT EXISTS index_asset_task_asset_id ON asset_task(asset_id)");
     };
 
     async GetAssetTasks(): Promise<AssetTask[]> {
@@ -63,47 +64,22 @@ export class AssetTaskModel {
     }
 
     async UpdateAssetTask(id: number, assetTask: any): Promise<AssetTask | null> {
-        try {
-            await pool.beginTransaction();
-            
-            // Read current version
-            const versionResult = await pool.query(
-                "SELECT version FROM asset_task WHERE id = ?",
-                [id]
-            );
-            
-            if (!versionResult.rows || versionResult.rows.length === 0) {
-                await pool.rollback();
-                return null;
-            }
-            
-            const currentVersion = versionResult.rows[0].version;
-            const newVersion = currentVersion + 1;
-            
-            // Update record without RETURNING
-            await pool.query(
-                "UPDATE asset_task SET code = ?, description = ?, is_rfs = ?, message_id = ?, version = ? WHERE id = ?",
-                [assetTask['code'], assetTask['description'], assetTask['isRfs'], assetTask['messageId'], newVersion, id]
-            );
-            
-            // Select the updated record
-            const selectResult = await pool.query(
-                "SELECT * FROM asset_task WHERE id = ?",
-                [id]
-            );
-            
-            await pool.commit();
-            
-            let updatedAssetTask: any = null;
-            
-            if (selectResult.rows != null && selectResult.rows.length > 0)
-                updatedAssetTask = AssetTaskMapper.map(selectResult.rows[0]);
-            
-            return updatedAssetTask;
-        } catch (error) {
-            await pool.rollback();
-            throw error;
-        }
+        await pool.query(
+            "UPDATE asset_task SET code = ?, description = ?, is_rfs = ?, message_id = ? WHERE id = ?",
+            [assetTask['code'], assetTask['description'], assetTask['isRfs'], assetTask['messageId'], id]
+        );
+
+        const selectResult = await pool.query(
+            "SELECT * FROM asset_task WHERE id = ?",
+            [id]
+        );
+
+        let updatedAssetTask: any = null;
+
+        if (selectResult.rows != null && selectResult.rows.length > 0)
+            updatedAssetTask = AssetTaskMapper.map(selectResult.rows[0]);
+
+        return updatedAssetTask;
     }
 
     async GetAssetTasksCount(): Promise<any> {
@@ -124,5 +100,14 @@ export class AssetTaskModel {
 
     async GetAssetTaskIdsForAsset(assetId: number): Promise<any> {
         return await pool.query('SELECT id FROM asset_task WHERE asset_id = ?', [assetId]);
-    };    
+    };
+
+    async GetAssetTasksForAsset(assetId: number): Promise<AssetTask[]> {
+        const result = await pool.query("SELECT * FROM asset_task WHERE asset_id = ?", [assetId]);
+        return AssetTaskMapper.mapList(result.rows);
+    }
+
+    async DeleteAssetTasksForAsset(assetId: number): Promise<any> {
+        return await pool.query("DELETE FROM asset_task WHERE asset_id = ?", [assetId]);
+    }
 }

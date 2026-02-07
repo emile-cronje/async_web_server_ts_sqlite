@@ -65,26 +65,21 @@ class AssetTaskController {
         let mqttSessionId = req.body.mqttSessionId;
         try {
             const id = parseInt(req.params.id);
-            // Check if the task exists before attempting to update
-            const existingTask = await this.assetTaskModel.GetAssetTaskById(id);
-            if (!existingTask) {
+            const updatedAssetTask = await this.assetTaskModel.UpdateAssetTask(id, assetTaskData);
+            if (updatedAssetTask == null) {
                 return res.status(404).json({ message: "Asset Task not found" });
             }
-            // Task exists, proceed with update
-            const updatedAssetTask = await this.assetTaskModel.UpdateAssetTask(id, assetTaskData);
-            if (updatedAssetTask != null) {
-                const assetTaskData = {
-                    mqttSessionId: mqttSessionId,
-                    messageId: updatedAssetTask.messageId,
-                    clientId: updatedAssetTask.clientId,
-                    entityType: "AssetTask",
-                    operation: "Update",
-                    entity: JSON.stringify(updatedAssetTask),
-                    entityId: updatedAssetTask.id
-                };
-                this.mqttClient?.publish("/entities", JSON.stringify(assetTaskData));
-                res.json(updatedAssetTask);
-            }
+            const assetTaskPayload = {
+                mqttSessionId: mqttSessionId,
+                messageId: updatedAssetTask.messageId,
+                clientId: updatedAssetTask.clientId,
+                entityType: "AssetTask",
+                operation: "Update",
+                entity: JSON.stringify(updatedAssetTask),
+                entityId: updatedAssetTask.id
+            };
+            this.mqttClient?.publish("/entities", JSON.stringify(assetTaskPayload));
+            res.json(updatedAssetTask);
         }
         catch (error) {
             console.error(error);
@@ -138,14 +133,10 @@ class AssetTaskController {
     }
     async DeleteAssetTasksForAsset(assetId, req, res) {
         try {
-            let queryResult = await this.assetTaskModel.GetAssetTaskIdsForAsset(assetId);
-            const taskIds = Array.from(queryResult.rows);
-            for (const row of taskIds) {
-                let taskId = row.id;
-                const savedAssetTask = await this.assetTaskModel.GetAssetTaskById(taskId);
-                if (savedAssetTask == null)
-                    continue;
-                await this.assetTaskModel.DeleteAssetTask(taskId);
+            const savedAssetTasks = await this.assetTaskModel.GetAssetTasksForAsset(assetId);
+            await this.assetTaskModel.DeleteAssetTasksForAsset(assetId);
+            for (const savedAssetTask of savedAssetTasks) {
+                const taskId = savedAssetTask.id;
                 const assetTaskData = {
                     messageId: req.body.messageId,
                     clientId: savedAssetTask.clientId,

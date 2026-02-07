@@ -100,15 +100,6 @@ class MeterController {
 
         try {
             const id = parseInt(req.params.id);
-            
-            // Check if the meter exists before attempting to update
-            const existingMeter = await this.meterModel.GetMeterById(id);
-            
-            if (!existingMeter) {
-                return res.status(404).json({ message: "Meter not found" });
-            }
-            
-            // Meter exists, proceed with update
             const updatedMeter = await this.meterModel.UpdateMeter(id, meterData);
 
             if (updatedMeter == null) {

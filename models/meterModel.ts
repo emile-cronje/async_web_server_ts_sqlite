@@ -87,47 +87,22 @@ FROM (
     }
 
     async UpdateMeter(id: number, meter: any): Promise<Meter | null> {
-        try {
-            await pool.beginTransaction();
-            
-            // Read current version
-            const versionResult = await pool.query(
-                "SELECT version FROM meter WHERE id = ?",
-                [id]
-            );
-            
-            if (!versionResult.rows || versionResult.rows.length === 0) {
-                await pool.rollback();
-                return null;
-            }
-            
-            const currentVersion = versionResult.rows[0].version;
-            const newVersion = currentVersion + 1;
-            
-            // Update record without RETURNING
-            await pool.query(
-                "UPDATE meter SET code = ?, description = ?, is_paused = ?, message_id = ?, version = ? WHERE id = ?",
-                [meter['code'], meter['description'], meter['isPaused'], meter['messageId'], newVersion, id]
-            );
-            
-            // Select the updated record
-            const selectResult = await pool.query(
-                "SELECT * FROM meter WHERE id = ?",
-                [id]
-            );
-            
-            await pool.commit();
-            
-            let updatedMeter: any = null;
-            
-            if (selectResult.rows != null && selectResult.rows.length > 0)
-                updatedMeter = MeterMapper.map(selectResult.rows[0]);
-            
-            return updatedMeter;
-        } catch (error) {
-            await pool.rollback();
-            throw error;
-        }
+        await pool.query(
+            "UPDATE meter SET code = ?, description = ?, is_paused = ?, message_id = ? WHERE id = ?",
+            [meter['code'], meter['description'], meter['isPaused'], meter['messageId'], id]
+        );
+
+        const selectResult = await pool.query(
+            "SELECT * FROM meter WHERE id = ?",
+            [id]
+        );
+
+        let updatedMeter: any = null;
+
+        if (selectResult.rows != null && selectResult.rows.length > 0)
+            updatedMeter = MeterMapper.map(selectResult.rows[0]);
+
+        return updatedMeter;
     }
 
     async GetMetersCount(): Promise<any> {

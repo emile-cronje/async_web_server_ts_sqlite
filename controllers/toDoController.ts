@@ -75,15 +75,6 @@ class ToDoController {
 
         try {
             const id = parseInt(req.params.id);
-            
-            // Check if the todo exists before attempting to update
-            const existingTodo = await this.todoModel.GetTodoById(id);
-            
-            if (!existingTodo) {
-                return res.status(404).json({ message: "Todo not found" });
-            }
-            
-            // Todo exists, proceed with update
             const updatedTodo = await this.todoModel.UpdateTodo(id, itemData);
 
             if (updatedTodo == null) {
@@ -186,7 +177,7 @@ class ToDoController {
 }
 
 const todoController = new ToDoController();
-todoController.Initialise("192.168.10.174");
+todoController.Initialise("192.168.10.135");
 
 export const GetToDos = todoController.GetToDos.bind(todoController);
 export const GetToDoById = todoController.GetToDoById.bind(todoController);

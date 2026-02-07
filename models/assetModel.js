@@ -43,30 +43,12 @@ class AssetModel {
         return newAsset;
     }
     async UpdateAsset(id, asset) {
-        try {
-            await dbConfig_1.default.beginTransaction();
-            // Read current version
-            const versionResult = await dbConfig_1.default.query("SELECT version FROM asset WHERE id = ?", [id]);
-            if (!versionResult.rows || versionResult.rows.length === 0) {
-                await dbConfig_1.default.rollback();
-                return null;
-            }
-            const currentVersion = versionResult.rows[0].version;
-            const newVersion = currentVersion + 1;
-            // Update record without RETURNING
-            await dbConfig_1.default.query("UPDATE asset SET code = ?, description = ?, is_msi = ?, message_id = ?, version = ? WHERE id = ?", [asset['code'], asset['description'], asset['isMsi'], asset['messageId'], newVersion, id]);
-            // Select the updated record
-            const selectResult = await dbConfig_1.default.query("SELECT * FROM asset WHERE id = ?", [id]);
-            await dbConfig_1.default.commit();
-            let updatedAsset = null;
-            if (selectResult.rows != null && selectResult.rows.length > 0)
-                updatedAsset = AssetMapper.map(selectResult.rows[0]);
-            return updatedAsset;
-        }
-        catch (error) {
-            await dbConfig_1.default.rollback();
-            throw error;
-        }
+        await dbConfig_1.default.query("UPDATE asset SET code = ?, description = ?, is_msi = ?, message_id = ? WHERE id = ?", [asset['code'], asset['description'], asset['isMsi'], asset['messageId'], id]);
+        const selectResult = await dbConfig_1.default.query("SELECT * FROM asset WHERE id = ?", [id]);
+        let updatedAsset = null;
+        if (selectResult.rows != null && selectResult.rows.length > 0)
+            updatedAsset = AssetMapper.map(selectResult.rows[0]);
+        return updatedAsset;
     }
     async GetAssetsCount() {
         const result = await dbConfig_1.default.query("SELECT COUNT(id) as count FROM asset");

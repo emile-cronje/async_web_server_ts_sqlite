@@ -41,30 +41,12 @@ class ToDoModel {
         return newToDoItem;
     }
     async UpdateTodo(id, todoItem) {
-        try {
-            await dbConfig_1.default.beginTransaction();
-            // Read current version
-            const versionResult = await dbConfig_1.default.query("SELECT version FROM todo_item WHERE id = ?", [id]);
-            if (!versionResult.rows || versionResult.rows.length === 0) {
-                await dbConfig_1.default.rollback();
-                return null;
-            }
-            const currentVersion = versionResult.rows[0].version;
-            const newVersion = currentVersion + 1;
-            // Update record without RETURNING
-            await dbConfig_1.default.query("UPDATE todo_item SET name = ?, description = ?, is_complete = ?, message_id = ?, version = ? WHERE id = ?", [todoItem['name'], todoItem['description'], todoItem['isComplete'], todoItem['messageId'], newVersion, id]);
-            // Select the updated record
-            const selectResult = await dbConfig_1.default.query("SELECT * FROM todo_item WHERE id = ?", [id]);
-            await dbConfig_1.default.commit();
-            let updatedTodoItem = null;
-            if (selectResult.rows != null && selectResult.rows.length > 0)
-                updatedTodoItem = TodoMapper.map(selectResult.rows[0]);
-            return updatedTodoItem;
-        }
-        catch (error) {
-            await dbConfig_1.default.rollback();
-            throw error;
-        }
+        await dbConfig_1.default.query("UPDATE todo_item SET name = ?, description = ?, is_complete = ?, message_id = ? WHERE id = ?", [todoItem['name'], todoItem['description'], todoItem['isComplete'], todoItem['messageId'], id]);
+        const selectResult = await dbConfig_1.default.query("SELECT * FROM todo_item WHERE id = ?", [id]);
+        let updatedTodoItem = null;
+        if (selectResult.rows != null && selectResult.rows.length > 0)
+            updatedTodoItem = TodoMapper.map(selectResult.rows[0]);
+        return updatedTodoItem;
     }
     async GetTodoItemsCount() {
         const result = await dbConfig_1.default.query("SELECT COUNT(id) as count FROM todo_item");

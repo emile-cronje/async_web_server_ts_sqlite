@@ -76,12 +76,6 @@ class AssetController {
         let mqttSessionId = req.body.mqttSessionId;
         try {
             const id = parseInt(req.params.id);
-            // Check if the asset exists before attempting to update
-            const existingAsset = await this.assetModel.GetAssetById(id);
-            if (!existingAsset) {
-                return res.status(404).json({ message: "Asset not found" });
-            }
-            // Asset exists, proceed with update
             const updatedAsset = await this.assetModel.UpdateAsset(id, assetData);
             if (updatedAsset == null) {
                 return res.status(404).json({ message: "Asset not found" });
