@@ -63,9 +63,13 @@ export class MeterReadingModel {
     }
 
     async UpdateMeterReading(id: number, meterReading: any): Promise<MeterReading | null> {
+        let version = meterReading['version'];
+
+        version = version + 1;
+
         await pool.query(
-            "UPDATE meter_reading SET reading = ?, reading_on = ?, message_id = ? WHERE id = ?",
-            [meterReading['reading'], meterReading['readingOn'], meterReading['messageId'], id]
+            "UPDATE meter_reading SET version = ?, reading = ?, reading_on = ?, message_id = ? WHERE id = ?",
+            [version, meterReading['reading'], meterReading['readingOn'], meterReading['messageId'], id]
         );
 
         const selectResult = await pool.query(

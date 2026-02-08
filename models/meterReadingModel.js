@@ -44,7 +44,9 @@ class MeterReadingModel {
         return newMeterReading;
     }
     async UpdateMeterReading(id, meterReading) {
-        await dbConfig_1.default.query("UPDATE meter_reading SET reading = ?, reading_on = ?, message_id = ? WHERE id = ?", [meterReading['reading'], meterReading['readingOn'], meterReading['messageId'], id]);
+        let version = meterReading['version'];
+        version = version + 1;
+        await dbConfig_1.default.query("UPDATE meter_reading SET version = ?, reading = ?, reading_on = ?, message_id = ? WHERE id = ?", [version, meterReading['reading'], meterReading['readingOn'], meterReading['messageId'], id]);
         const selectResult = await dbConfig_1.default.query("SELECT * FROM meter_reading WHERE id = ?", [id]);
         let updatedMeterReading = null;
         if (selectResult.rows != null && selectResult.rows.length > 0)
