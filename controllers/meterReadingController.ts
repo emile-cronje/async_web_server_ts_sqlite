@@ -127,20 +127,7 @@ class MeterReadingController {
             if (savedMeterReading == null) {
                 return res.status(404).json({ message: "Meter Reading not found" });
             } else {
-                await this.meterReadingModel.DeleteMeterReading(id);
-
-                const meterReadingData = {
-                    mqttSessionId: mqttSessionId,                                                            
-                    messageId: req.body.messageId,
-                    clientId: savedMeterReading.clientId,
-                    entityType: 'MeterReading',
-                    operation: 'Delete',
-                    entity: JSON.stringify(savedMeterReading),
-                    entityId: id
-                };
-
-                this.mqttClient?.publish('/entities', JSON.stringify(meterReadingData));
-
+                await this.deleteMeterReadingAndPublish(savedMeterReading, req.body.messageId, mqttSessionId);
                 res.json(savedMeterReading);
             }
         } catch (error) {
@@ -151,27 +138,38 @@ class MeterReadingController {
     public async DeleteMeterReadingsForMeter(meterId: number, req: Request, res: Response): Promise<any> {
         try {
             let queryResult = await this.meterReadingModel.GetMeterReadingIdsForMeter(meterId);
-            await this.meterReadingModel.DeleteMeterReadingsForMeter(meterId);
 
-            const savedMeterReadings = Array.from(queryResult.rows) as MeterReading[];
+            const meterReadingIds = Array.from(queryResult.rows) as MeterReading[];
 
-            for (const savedMeterReading of savedMeterReadings) {
-                const readingId = savedMeterReading.id;
+            for (const meterReadingId of meterReadingIds) {
+                const savedMeterReading = await this.meterReadingModel.GetMeterReadingById(meterReadingId.id);                
 
-                const meterReadingData = {
-                    messageId: req.body.messageId,
-                    clientId: savedMeterReading.clientId,
-                    entityType: 'MeterReading',
-                    operation: 'Delete',
-                    entity: JSON.stringify(savedMeterReading),
-                    entityId: readingId
-                };
-
-                this.mqttClient?.publish('/entities', JSON.stringify(meterReadingData));
+                if (savedMeterReading)
+                    await this.deleteMeterReadingAndPublish(savedMeterReading, req.body.messageId);
             }
         } catch (error) {
             res.status(500).json({ message: "Internal server error" });
         }
+    }
+
+    private async deleteMeterReadingAndPublish(
+        savedMeterReading: MeterReading,
+        messageId: string,
+        mqttSessionId?: string
+    ): Promise<void> {
+        await this.meterReadingModel.DeleteMeterReading(savedMeterReading.id);
+
+        const meterReadingData = {
+            ...(mqttSessionId ? { mqttSessionId } : {}),
+            messageId: messageId,
+            clientId: savedMeterReading.clientId,
+            entityType: 'MeterReading',
+            operation: 'Delete',
+            entity: JSON.stringify(savedMeterReading),
+            entityId: savedMeterReading.id
+        };
+
+        this.mqttClient?.publish('/entities', JSON.stringify(meterReadingData));
     }
 
     private SetupProcessExitHandlers() {

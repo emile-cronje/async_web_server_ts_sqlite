@@ -65,12 +65,9 @@ class MeterReadingModel {
     }
     ;
     async GetMeterReadingIdsForMeter(meterId) {
-        return await dbConfig_1.default.query('SELECT * FROM meter_reading WHERE meter_id = ?', [meterId]);
+        return await dbConfig_1.default.query('SELECT id FROM meter_reading WHERE meter_id = ?', [meterId]);
     }
     ;
-    async DeleteMeterReadingsForMeter(meterId) {
-        return await dbConfig_1.default.query("DELETE FROM meter_reading WHERE meter_id = ?", [meterId]);
-    }
 }
 exports.MeterReadingModel = MeterReadingModel;
 //# sourceMappingURL=meterReadingModel.js.map

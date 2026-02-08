@@ -98,10 +98,6 @@ export class MeterReadingModel {
     };
 
     async GetMeterReadingIdsForMeter(meterId: number): Promise<any> {
-        return await pool.query('SELECT * FROM meter_reading WHERE meter_id = ?', [meterId]);
+        return await pool.query('SELECT id FROM meter_reading WHERE meter_id = ?', [meterId]);
     };
-
-    async DeleteMeterReadingsForMeter(meterId: number): Promise<any> {
-        return await pool.query("DELETE FROM meter_reading WHERE meter_id = ?", [meterId]);
-    }
 }
